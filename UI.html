@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+      padding: 20px;
+      background-color: #f5f7fa;
+    }
+    
+    .container {
+      max-width: 100%;
+    }
+    
+    h2 {
+      color: #1a73e8;
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    
+    .subtitle {
+      color: #5f6368;
+      font-size: 13px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    
+    .upload-area {
+      background: white;
+      border: 2px dashed #dadce0;
+      border-radius: 8px;
+      padding: 30px 20px;
+      text-align: center;
+      margin-bottom: 15px;
+      transition: all 0.3s;
+    }
+    
+    .upload-area:hover {
+      border-color: #1a73e8;
+      background-color: #f8f9fa;
+    }
+    
+    .upload-area.dragover {
+      border-color: #1a73e8;
+      background-color: #e8f0fe;
+    }
+    
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    
+    .upload-text {
+      color: #5f6368;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    
+    .file-input-label {
+      display: inline-block;
+      padding: 10px 24px;
+      background: #1a73e8;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.3s;
+    }
+    
+    .file-input-label:hover {
+      background: #1557b0;
+    }
+    
+    .file-input {
+      display: none;
+    }
+    
+    .file-info {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e8f0fe;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #1a73e8;
+      display: none;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-primary {
+      background: #1a73e8;
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: #1557b0;
+      box-shadow: 0 2px 4px rgba(26, 115, 232, 0.4);
+    }
+    
+    .btn-danger {
+      background: #ea4335;
+      color: white;
+    }
+    
+    .btn-danger:hover:not(:disabled) {
+      background: #d33828;
+      box-shadow: 0 2px 4px rgba(234, 67, 53, 0.4);
+    }
+    
+    .status-box {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .status-box.show {
+      display: block;
+    }
+    
+    .status-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    
+    .status-content {
+      font-size: 13px;
+      line-height: 1.8;
+      color: #5f6368;
+    }
+    
+    .status-success {
+      border-left: 4px solid #34a853;
+    }
+    
+    .status-success .status-title {
+      color: #34a853;
+    }
+    
+    .status-error {
+      border-left: 4px solid #ea4335;
+    }
+    
+    .status-error .status-title {
+      color: #ea4335;
+    }
+    
+    .status-info {
+      border-left: 4px solid #1a73e8;
+    }
+    
+    .status-info .status-title {
+      color: #1a73e8;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .loading.show {
+      display: block;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #1a73e8;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: #5f6368;
+      font-size: 14px;
+    }
+    
+    .info-box {
+      background: #e8f0fe;
+      border-left: 4px solid #1a73e8;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-size: 12px;
+      color: #1a73e8;
+      line-height: 1.6;
+    }
+    
+    .detail-list {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+    
+    .detail-list li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📋 長照特約單位匯入系統</h2>
+    <p class="subtitle">
+      上傳Excel檔案，系統將自動解析並生成可搜尋的HTML頁面<br>
+      支援格式：.xlsx、.xls
+    </p>
+    
+    <!-- 上傳區域 -->
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">
+        點擊選擇檔案或拖曳檔案至此處
+      </div>
+      <label for="fileInput" class="file-input-label">
+        選擇Excel檔案
+      </label>
+      <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+      <div class="file-info" id="fileInfo"></div>
+    </div>
+    
+    <!-- 按鈕組 -->
+    <div class="button-group">
+      <button class="btn btn-primary" id="importBtn" onclick="importFile()" disabled>
+        🔄 開始匯入
+      </button>
+      <button class="btn btn-danger" id="clearBtn" onclick="clearAllData()">
+        🗑️ 清除資料
+      </button>
+    </div>
+    
+    <!-- 載入中 -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">處理中，請稍候...</div>
+    </div>
+    
+    <!-- 狀態顯示 -->
+    <div class="status-box" id="statusBox"></div>
+    
+    <!-- 說明 -->
+    <div class="info-box">
+      <strong>💡 使用說明：</strong>
+      <ul class="detail-list">
+        <li>支援「臺北市長照2.0特約單位一覽表」格式</li>
+        <li>系統會自動識別分頁格式並解析</li>
+        <li>生成的HTML包含分頁切換、搜尋、篩選功能</li>
+        <li>HTML採用iframe格式，可直接嵌入網頁</li>
+        <li>檔案大小限制：10MB</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    let selectedFile = null;
+    
+    // 檔案選擇處理
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+    });
+    
+    // 拖曳上傳
+    const uploadArea = document.getElementById('uploadArea');
+    
+    uploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadArea.classList.remove('dragover');
+      
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+    });
+    
+    // 處理檔案選擇
+    function handleFileSelect(file) {
+      // 檢查檔案類型
+      const validTypes = [
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      
+      if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
+        showStatus('error', '檔案格式錯誤', '請選擇Excel檔案（.xlsx 或 .xls）');
+        return;
+      }
+      
+      // 檢查檔案大小（10MB）
+      if (file.size > 10 * 1024 * 1024) {
+        showStatus('error', '檔案太大', '檔案大小不能超過10MB');
+        return;
+      }
+      
+      selectedFile = file;
+      
+      // 顯示檔案資訊
+      const fileInfo = document.getElementById('fileInfo');
+      const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+      fileInfo.innerHTML = `
+        📄 已選擇：${file.name}<br>
+        📦 大小：${fileSizeMB} MB
+      `;
+      fileInfo.style.display = 'block';
+      
+      // 啟用匯入按鈕
+      document.getElementById('importBtn').disabled = false;
+      
+      // 清除之前的狀態
+      document.getElementById('statusBox').classList.remove('show');
+    }
+    
+    // 匯入檔案
+    function importFile() {
+      if (!selectedFile) {
+        showStatus('error', '未選擇檔案', '請先選擇要匯入的Excel檔案');
+        return;
+      }
+      
+      // 顯示載入中
+      document.getElementById('loading').classList.add('show');
+      document.getElementById('importBtn').disabled = true;
+      document.getElementById('clearBtn').disabled = true;
+      document.getElementById('statusBox').classList.remove('show');
+      
+      // 讀取檔案
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const fileData = {
+          name: selectedFile.name,
+          mimeType: selectedFile.type,
+          data: e.target.result.split(',')[1] // Base64編碼
+        };
+        
+        // 呼叫後端處理
+        google.script.run
+          .withSuccessHandler(onImportSuccess)
+          .withFailureHandler(onImportError)
+          .processExcelFile(fileData);
+      };
+      
+      reader.onerror = function() {
+        onImportError('檔案讀取失敗');
+      };
+      
+      reader.readAsDataURL(selectedFile);
+    }
+    
+    // 匯入成功
+    function onImportSuccess(result) {
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('importBtn').disabled = false;
+      document.getElementById('clearBtn').disabled = false;
+      
+      if (result.success) {
+        let detailsHtml = '<ul class="detail-list">';
+        detailsHtml += `<li>分頁數：${result.details.分頁數}</li>`;
+        detailsHtml += `<li>總機構數：${result.details.總機構數}</li>`;
+        detailsHtml += `<li>處理時間：${result.details.處理時間}</li>`;
+        detailsHtml += '<li>分頁列表：<ul>';
+        result.details.分頁列表.forEach(function(sheet) {
+          detailsHtml += `<li>${sheet}</li>`;
+        });
+        detailsHtml += '</ul></li>';
+        detailsHtml += '</ul>';
+        
+        showStatus('success', '✅ 匯入成功！', 
+          '資料已成功寫入Google Sheet<br>' + detailsHtml);
+      } else {
+        showStatus('error', '匯入失敗', result.message + '<br>' + (result.error || ''));
+      }
+    }
+    
+    // 匯入失敗
+    function onImportError(error) {
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('importBtn').disabled = false;
+      document.getElementById('clearBtn').disabled = false;
+      
+      showStatus('error', '處理錯誤', error.message || error.toString());
+    }
+    
+    // 清除所有資料
+    function clearAllData() {
+      if (!confirm('確定要清除所有資料嗎？此操作無法復原。')) {
+        return;
+      }
+      
+      document.getElementById('loading').classList.add('show');
+      document.getElementById('clearBtn').disabled = true;
+      
+      google.script.run
+        .withSuccessHandler(function() {
+          document.getElementById('loading').classList.remove('show');
+          document.getElementById('clearBtn').disabled = false;
+          showStatus('success', '清除成功', '所有資料已清除');
+          
+          // 重置檔案選擇
+          selectedFile = null;
+          document.getElementById('fileInput').value = '';
+          document.getElementById('fileInfo').style.display = 'none';
+          document.getElementById('importBtn').disabled = true;
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('loading').classList.remove('show');
+          document.getElementById('clearBtn').disabled = false;
+          showStatus('error', '清除失敗', error.message || error.toString());
+        })
+        .clearData();
+    }
+    
+    // 顯示狀態
+    function showStatus(type, title, content) {
+      const statusBox = document.getElementById('statusBox');
+      statusBox.className = 'status-box show status-' + type;
+      statusBox.innerHTML = `
+        <div class="status-title">${title}</div>
+        <div class="status-content">${content}</div>
+      `;
+    }
+  </script>
+</body>
+</html>
