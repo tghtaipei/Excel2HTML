@@ -669,7 +669,6 @@ SOFTWARE.
 
 如有問題或建議，歡迎透過以下方式聯繫：
 
-- **GitHub Issues**：[專案 Issues 頁面]
 - **Email**：tghtaipei@gmail.com
 
 ---
@@ -680,7 +679,6 @@ SOFTWARE.
 
 - Google Apps Script 文件
 - Google Drive API
-- Froala Editor
 - 所有使用者的回饋與建議
 
 ---
