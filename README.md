@@ -14,7 +14,7 @@
 
 ## 系統簡介
 
-這是一個基於 Google Apps Script 開發的自動化工具，可將 Excel 檔案（.xlsx / .xls）轉換為互動式 HTML 表格，並自動儲存到 Google Drive。生成的 HTML 支援搜尋、篩選、多分頁切換等功能，特別適合用於 Froala Editor 等所見即所得編輯器中。
+這是一個基於 Google Apps Script 開發的自動化工具，可將 Excel 檔案（.xlsx / .xls）轉換為互動式 HTML 表格，並自動儲存到 Google Drive。生成的 HTML 支援搜尋、篩選、多分頁切換等功能。
 
 ### 適用場景
 - 政府機關公開資料發布
