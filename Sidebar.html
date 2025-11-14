@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      padding: 25px;
+      margin: 0;
+      background: linear-gradient(135deg, #e0f7fa 0%, #b3e5fc 100%);
+      min-height: 100vh;
+    }
+    
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 25px;
+    }
+    
+    button {
+      padding: 14px 24px;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .import-btn {
+      background: linear-gradient(135deg, #0288d1 0%, #0277bd 100%);
+      color: white;
+    }
+    
+    .import-btn:hover {
+      background: linear-gradient(135deg, #0277bd 0%, #01579b 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(2, 136, 209, 0.4);
+    }
+    
+    .clear-btn {
+      background: linear-gradient(135deg, #00acc1 0%, #00838f 100%);
+      color: white;
+    }
+    
+    .clear-btn:hover {
+      background: linear-gradient(135deg, #00838f 0%, #006064 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 172, 193, 0.4);
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+      font-size: 14px;
+    }
+    
+    .status.success {
+      background: #c8e6c9;
+      color: #2e7d32;
+      border: 2px solid #66bb6a;
+    }
+    
+    .status.error {
+      background: #ffcdd2;
+      color: #c62828;
+      border: 2px solid #ef5350;
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .spinner {
+      border: 3px solid #b3e5fc;
+      border-top: 3px solid #0288d1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    .header-input-container {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .header-input-container h3 {
+      color: #01579b;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+    
+    .sheet-header-input {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid #b3e5fc;
+    }
+    
+    .sheet-header-input h4 {
+      margin: 0 0 12px 0;
+      color: #0277bd;
+      font-size: 16px;
+    }
+    
+    .sheet-header-input label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #01579b;
+      font-weight: 600;
+    }
+    
+    .sheet-header-input input[type="number"] {
+      width: 100px;
+      padding: 8px 12px;
+      border: 2px solid #ff80ab;
+      border-radius: 6px;
+      font-size: 15px;
+      background: #fce4ec;
+      font-weight: 600;
+      color: #c2185b;
+    }
+    
+    .sheet-header-input input[type="number"]:focus {
+      outline: none;
+      border-color: #f50057;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(245, 0, 87, 0.1);
+    }
+    
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 12px;
+      background: white;
+    }
+    
+    .preview-table th,
+    .preview-table td {
+      border: 1px solid #b3e5fc;
+      padding: 6px;
+      text-align: left;
+    }
+    
+    .preview-table th {
+      background: #e1f5fe;
+      font-weight: bold;
+      color: #01579b;
+    }
+    
+    .preview-table td {
+      color: #37474f;
+    }
+    
+    .confirm-btn {
+      background: linear-gradient(135deg, #00c853 0%, #00a152 100%);
+      color: white;
+      width: 100%;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+    
+    .confirm-btn:hover {
+      background: linear-gradient(135deg, #00a152 0%, #00897b 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="button-container">
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <button class="import-btn" onclick="selectFile()">📊 匯入EXCEL表格</button>
+    <button class="clear-btn" onclick="clearData()">🗑️ 清除資料</button>
+  </div>
+  
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p id="loadingText" style="color: #0277bd; font-weight: 600;">處理中...</p>
+  </div>
+  
+  <div class="header-input-container" id="headerInputContainer"></div>
+  
+  <div class="status" id="status"></div>
+  
+  <script>
+    var currentFileName = '';
+    var currentSheets = [];
+    
+    function selectFile() {
+      document.getElementById('fileInput').click();
+    }
+    
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      
+      showLoading('上傳並解析檔案中...');
+      
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var data = e.target.result;
+        
+        google.script.run
+          .withSuccessHandler(onImportSuccess)
+          .withFailureHandler(onError)
+          .handleImport(data, file.name);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    function onImportSuccess(result) {
+      hideLoading();
+      
+      if (!result.success) {
+        showStatus(result.message, 'error');
+        return;
+      }
+      
+      if (result.needHeaderInput) {
+        currentFileName = result.fileName;
+        currentSheets = result.sheets;
+        showHeaderInput(result.sheets);
+      } else {
+        showStatus(result.message, 'success');
+        document.getElementById('fileInput').value = '';
+      }
+    }
+    
+    function showHeaderInput(sheets) {
+      var container = document.getElementById('headerInputContainer');
+      container.innerHTML = '<h3>請指定各分頁的標題列位置</h3>';
+      
+      for (var i = 0; i < sheets.length; i++) {
+        var sheet = sheets[i];
+        var div = document.createElement('div');
+        div.className = 'sheet-header-input';
+        
+        var html = '<h4>' + escapeHtml(sheet.name) + '</h4>';
+        html += '<label>標題列在第幾列？<input type="number" id="headerRow' + i + '" value="1" min="1" max="100"></label>';
+        html += '<table class="preview-table"><thead><tr><th>列</th>';
+        
+        if (sheet.preview.length > 0) {
+          for (var j = 0; j < Math.min(10, sheet.preview[0].length); j++) {
+            html += '<th>欄' + (j + 1) + '</th>';
+          }
+        }
+        
+        html += '</tr></thead><tbody>';
+        
+        for (var r = 0; r < sheet.preview.length; r++) {
+          html += '<tr><td><strong>' + (r + 1) + '</strong></td>';
+          for (var c = 0; c < Math.min(10, sheet.preview[r].length); c++) {
+            var cellValue = sheet.preview[r][c] === null || sheet.preview[r][c] === undefined ? '' : sheet.preview[r][c];
+            html += '<td>' + escapeHtml(String(cellValue)) + '</td>';
+          }
+          html += '</tr>';
+        }
+        
+        html += '</tbody></table>';
+        div.innerHTML = html;
+        container.appendChild(div);
+      }
+      
+      var confirmBtn = document.createElement('button');
+      confirmBtn.className = 'confirm-btn';
+      confirmBtn.textContent = '✓ 確認並繼續匯入';
+      confirmBtn.onclick = confirmHeaders;
+      container.appendChild(confirmBtn);
+      
+      container.style.display = 'block';
+    }
+    
+    function confirmHeaders() {
+      var headerRows = [];
+      
+      for (var i = 0; i < currentSheets.length; i++) {
+        var input = document.getElementById('headerRow' + i);
+        var value = parseInt(input.value);
+        
+        if (isNaN(value) || value < 1) {
+          showStatus('請為 "' + currentSheets[i].name + '" 輸入有效的列數', 'error');
+          return;
+        }
+        
+        headerRows.push(value);
+      }
+      
+      showLoading('處理資料中...');
+      document.getElementById('headerInputContainer').style.display = 'none';
+      
+      google.script.run
+        .withSuccessHandler(onFinalImportSuccess)
+        .withFailureHandler(onError)
+        .handleImportWithHeaders(headerRows);
+    }
+    
+    function onFinalImportSuccess(result) {
+      hideLoading();
+      
+      if (result.success) {
+        showStatus(result.message, 'success');
+        document.getElementById('fileInput').value = '';
+      } else {
+        showStatus(result.message, 'error');
+      }
+    }
+    
+    function clearData() {
+      if (!confirm('確定要清除所有資料嗎?')) return;
+      
+      showLoading('清除資料中...');
+      
+      google.script.run
+        .withSuccessHandler(onClearSuccess)
+        .withFailureHandler(onError)
+        .handleClear();
+    }
+    
+    function onClearSuccess(result) {
+      hideLoading();
+      
+      if (result.success) {
+        showStatus(result.message, 'success');
+      } else {
+        showStatus(result.message, 'error');
+      }
+    }
+    
+    function onError(error) {
+      hideLoading();
+      showStatus('發生錯誤: ' + error.message, 'error');
+    }
+    
+    function showStatus(message, type) {
+      var status = document.getElementById('status');
+      status.textContent = message;
+      status.className = 'status ' + type;
+      status.style.display = 'block';
+      
+      setTimeout(function() {
+        status.style.display = 'none';
+      }, 8000);
+    }
+    
+    function showLoading(text) {
+      document.getElementById('loadingText').textContent = text || '處理中...';
+      document.getElementById('loading').style.display = 'block';
+      var buttons = document.querySelectorAll('button');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = true;
+      }
+    }
+    
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+      var buttons = document.querySelectorAll('button');
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = false;
+      }
+    }
+    
+    function escapeHtml(text) {
+      var map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+  </script>
+</body>
+</html>
