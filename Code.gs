@@ -12,6 +12,8 @@ const CONFIG = {
   META_ROW: 1,
   HTML_ROW: 2,
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+  HTML_FOLDER_NAME: '長照特約單位HTML下載',
+  APP_VERSION: 'Drive TXT Export v1.0',
   
   // 欄位對應
   COMMON_COLUMNS: {
@@ -95,6 +97,9 @@ function processExcelFile(fileData) {
     
     // 生成整合HTML
     const integratedHTML = generateIntegratedHTML(workbookData.sheets);
+
+    // 儲存HTML至Google Drive文字檔
+    const htmlFile = saveHtmlToDrive(integratedHTML);
     
     // 計算統計資訊
     const endTime = new Date();
@@ -102,7 +107,7 @@ function processExcelFile(fileData) {
     const totalInstitutions = workbookData.sheets.reduce(function(sum, sheet) { return sum + sheet.dataCount; }, 0);
     
     // 寫入Google Sheet
-    writeToSheet(workbookData, integratedHTML, processingTime, totalInstitutions);
+    writeToSheet(workbookData, htmlFile, processingTime, totalInstitutions);
     
     return {
       success: true,
@@ -111,7 +116,9 @@ function processExcelFile(fileData) {
         分頁數: workbookData.sheets.length,
         總機構數: totalInstitutions,
         處理時間: processingTime + '秒',
-        分頁列表: workbookData.sheets.map(function(s) { return s.name + ' (' + s.dataCount + '筆)'; })
+        分頁列表: workbookData.sheets.map(function(s) { return s.name + ' (' + s.dataCount + '筆)'; }),
+        TXT下載連結: htmlFile.url,
+        程式版本: CONFIG.APP_VERSION
       }
     };
     
@@ -277,11 +284,11 @@ function identifySheetFormat(values) {
 /**
  * 寫入資料到Google Sheet
  * @param {Object} workbookData - 工作簿資料
- * @param {String} htmlCode - HTML原始碼
+ * @param {Object} htmlFile - Google Drive上的HTML檔案資訊
  * @param {String} processingTime - 處理時間
  * @param {Number} totalInstitutions - 總機構數
  */
-function writeToSheet(workbookData, htmlCode, processingTime, totalInstitutions) {
+function writeToSheet(workbookData, htmlFile, processingTime, totalInstitutions) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   
@@ -300,6 +307,7 @@ function writeToSheet(workbookData, htmlCode, processingTime, totalInstitutions)
   sheet.setColumnWidth(4, 100); // 失敗數
   sheet.setColumnWidth(5, 100); // 總機構數
   sheet.setColumnWidth(6, 200); // 處理日期
+  sheet.setColumnWidth(7, 200); // 程式版本
   
   // 寫入第一列：轉換資訊
   const metaData = [
@@ -309,7 +317,8 @@ function writeToSheet(workbookData, htmlCode, processingTime, totalInstitutions)
       '成功數',
       '失敗數',
       '總機構數',
-      '處理日期'
+      '處理日期',
+      '程式版本'
     ],
     [
       processingTime,
@@ -317,118 +326,128 @@ function writeToSheet(workbookData, htmlCode, processingTime, totalInstitutions)
       workbookData.sheets.length,
       workbookData.totalSheets - workbookData.sheets.length,
       totalInstitutions,
-      new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+      new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+      CONFIG.APP_VERSION
     ]
   ];
-  
-  sheet.getRange(1, 1, 2, 6).setValues(metaData);
+
+  sheet.getRange(1, 1, 2, 7).setValues(metaData);
   
   // 設定第一列格式
-  sheet.getRange(1, 1, 1, 6)
+  sheet.getRange(1, 1, 1, 7)
     .setBackground('#1a73e8')
     .setFontColor('#ffffff')
     .setFontWeight('bold')
     .setHorizontalAlignment('center');
-  
-  sheet.getRange(2, 1, 1, 6)
+
+  sheet.getRange(2, 1, 1, 7)
     .setBackground('#e8f0fe')
     .setHorizontalAlignment('center');
   
-  // 檢查HTML大小並決定如何儲存
-  const htmlLength = htmlCode.length;
-  const MAX_CELL_SIZE = 45000; // 保守設定為45000,確保安全邊際
-  
-  Logger.log('HTML大小: ' + htmlLength + ' 字元');
-  
-  // 如果HTML過大,先警告
-  if (htmlLength > 200000) {
-    Logger.log('⚠️ 警告: HTML大小超過20萬字元,可能需要較長處理時間');
-  }
-  
-  if (htmlLength <= MAX_CELL_SIZE) {
-    // HTML不大，直接寫入單一儲存格
-    sheet.getRange(3, 1)
-      .setValue('整合HTML原始碼（可直接複製使用）')
-      .setBackground('#1a73e8')
-      .setFontColor('#ffffff')
-      .setFontWeight('bold');
-    
-    sheet.getRange(4, 1)
-      .setValue(htmlCode)
-      .setWrap(true);
-    
-    sheet.setColumnWidth(1, 800);
-    
-  } else {
-    // HTML太大,需要分割
-    Logger.log('HTML超過儲存格限制,進行分割...');
-    
-    // 計算需要的儲存格數量
-    const numChunks = Math.ceil(htmlLength / MAX_CELL_SIZE);
-    Logger.log('分割為 ' + numChunks + ' 個儲存格');
-    
-    // 檢查是否超過合理範圍
-    if (numChunks > 50) {
-      Logger.log('⚠️ 警告: 需要超過50個儲存格,建議優化HTML大小');
-    }
-    
-    // 寫入說明
-    sheet.getRange(3, 1)
-      .setValue('整合HTML原始碼（共' + numChunks + '個儲存格，請從上到下依序複製合併）')
-      .setBackground('#1a73e8')
-      .setFontColor('#ffffff')
-      .setFontWeight('bold');
-    
-    // 分割並寫入HTML
+  // 寫入HTML檔案資訊與連結
+  sheet.getRange(3, 1, 1, 5).setValues([[
+    'HTML檔案名稱',
+    '檔案大小 (KB)',
+    '建立時間',
+    'Drive 頁面連結',
+    '直接下載連結'
+  ]]);
+
+  sheet.getRange(3, 1, 1, 5)
+    .setBackground('#1a73e8')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center');
+
+  sheet.getRange(4, 1, 1, 5).setValues([[
+    htmlFile.name,
+    (htmlFile.size / 1024).toFixed(2),
+    Utilities.formatDate(htmlFile.createdAt, 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss'),
+    '',
+    ''
+  ]]);
+
+  sheet.getRange(4, 1, 1, 3)
+    .setBackground('#e8f0fe')
+    .setHorizontalAlignment('center');
+
+  sheet.getRange(4, 4)
+    .setFormula('=HYPERLINK("' + htmlFile.url + '", "檢視 Drive 檔案")')
+    .setBackground('#e8f0fe')
+    .setHorizontalAlignment('center');
+
+  sheet.getRange(4, 5)
+    .setFormula('=HYPERLINK("' + htmlFile.downloadUrl + '", "直接下載 TXT")')
+    .setBackground('#e8f0fe')
+    .setHorizontalAlignment('center');
+
+  sheet.setColumnWidth(1, 250);
+  sheet.setColumnWidth(2, 150);
+  sheet.setColumnWidth(3, 200);
+  sheet.setColumnWidth(4, 250);
+  sheet.setColumnWidth(5, 250);
+
+  // 使用說明
+  sheet.getRange(6, 1)
+    .setValue('📝 使用說明：\n1. 點擊「檢視 Drive 檔案」可確認檔案資訊\n2. 點擊「直接下載 TXT」可獲得純檔案內容，便於嵌入網站\n3. 若需重新產出資料，請重新上傳 Excel 檔案並等待系統更新連結\n\n📂 檔案名稱：' + htmlFile.name + '\n🔗 檢視連結：' + htmlFile.url + '\n⬇️ 下載連結：' + htmlFile.downloadUrl + '\n🆕 程式版本：' + CONFIG.APP_VERSION)
+    .setBackground('#fff3cd')
+    .setWrap(true)
+    .setVerticalAlignment('top');
+
+  // 紀錄最新檔案ID於文件層屬性，供後續程式使用
+  PropertiesService.getDocumentProperties().setProperty('LATEST_HTML_FILE_ID', htmlFile.id);
+
+  // 凍結前四列
+  sheet.setFrozenRows(4);
+
+  Logger.log('資料已成功寫入Sheet並提供TXT下載連結');
+}
+
+/**
+ * 將產出的HTML儲存為Google Drive文字檔
+ * @param {string} htmlCode - 完整的HTML原始碼
+ * @returns {Object} 包含檔案資訊的物件
+ */
+function saveHtmlToDrive(htmlCode) {
+  const timestamp = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyyMMdd_HHmmss');
+  const fileName = '長照特約單位資料_' + timestamp + '.txt';
+  const blob = Utilities.newBlob(htmlCode, 'text/plain', fileName);
+  const folder = ensureHtmlFolder();
+  const file = folder.createFile(blob);
+  file.setDescription('由長照特約單位匯入系統產生的HTML原始碼');
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return {
+    id: file.getId(),
+    name: fileName,
+    url: file.getUrl(),
+    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId(),
+    size: blob.getBytes().length,
+    createdAt: new Date()
+  };
+}
+
+function ensureHtmlFolder() {
+  const props = PropertiesService.getDocumentProperties();
+  let folderId = props.getProperty('HTML_DOWNLOAD_FOLDER_ID');
+  let folder = null;
+
+  if (folderId) {
     try {
-      for (let i = 0; i < numChunks; i++) {
-        const start = i * MAX_CELL_SIZE;
-        const end = Math.min(start + MAX_CELL_SIZE, htmlLength);
-        const chunk = htmlCode.substring(start, end);
-        
-        // 驗證chunk大小
-        if (chunk.length > 50000) {
-          throw new Error('分割後的片段(' + chunk.length + ')仍超過50000字元限制');
-        }
-        
-        const row = 4 + i;
-        sheet.getRange(row, 1)
-          .setValue(chunk)
-          .setWrap(false)
-          .setBackground('#f8f9fa');
-        
-        // 每10個chunk記錄一次進度
-        if ((i + 1) % 10 === 0 || i === numChunks - 1) {
-          Logger.log('進度: ' + (i + 1) + '/' + numChunks + ' (已寫入 ' + end + '/' + htmlLength + ' 字元)');
-        }
-      }
-    } catch (e) {
-      Logger.log('❌ 分割寫入失敗: ' + e.toString());
-      throw e;
+      folder = DriveApp.getFolderById(folderId);
+    } catch (error) {
+      Logger.log('找不到既有資料夾，將重新建立: ' + error.toString());
+      folder = null;
     }
-    
-    sheet.setColumnWidth(1, 1000);
-    
-    // 在最後加上合併說明
-    const instructionRow = 4 + numChunks;
-    sheet.getRange(instructionRow, 1)
-      .setValue('📝 使用說明：\n' +
-                '1. 從第4列開始，依序複製每個儲存格的內容\n' +
-                '2. 全部貼到同一個文字檔案中（記事本或VSCode）\n' +
-                '3. 確保沒有遺漏任何部分\n' +
-                '4. 儲存為 .html 檔案（編碼選UTF-8）\n' +
-                '5. 用瀏覽器開啟即可使用\n\n' +
-                '💡 提示：可以全選第4-' + (3 + numChunks) + '列，一次複製所有內容\n' +
-                '⚠️ 注意：共' + numChunks + '個片段，總大小約' + (htmlLength/1024).toFixed(1) + 'KB')
-      .setBackground('#fff3cd')
-      .setWrap(true)
-      .setVerticalAlignment('top');
   }
-  
-  // 凍結前三列
-  sheet.setFrozenRows(3);
-  
-  Logger.log('資料已成功寫入Sheet');
+
+  if (!folder) {
+    const folders = DriveApp.getFoldersByName(CONFIG.HTML_FOLDER_NAME);
+    folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(CONFIG.HTML_FOLDER_NAME);
+    props.setProperty('HTML_DOWNLOAD_FOLDER_ID', folder.getId());
+  }
+
+  return folder;
 }
 
 /**
@@ -471,13 +490,47 @@ function clearData() {
  * @returns {String} HTML原始碼
  */
 function getImportedHTML() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
-  
-  if (!sheet) {
+  const docProps = PropertiesService.getDocumentProperties();
+  const fileId = docProps.getProperty('LATEST_HTML_FILE_ID');
+
+  if (!fileId) {
     return null;
   }
-  
-  const htmlCode = sheet.getRange(4, 1).getValue();
-  return htmlCode || null;
+
+  try {
+    const file = DriveApp.getFileById(fileId);
+    return file.getBlob().getDataAsString('utf-8');
+  } catch (error) {
+    Logger.log('讀取TXT檔案失敗: ' + error.toString());
+    return null;
+  }
+}
+
+/**
+ * 提供前端檢視使用的系統資訊
+ * @returns {Object} 包含程式版本與最新TXT檔案資訊
+ */
+function getAppMetadata() {
+  const docProps = PropertiesService.getDocumentProperties();
+  const fileId = docProps.getProperty('LATEST_HTML_FILE_ID');
+  let latestFile = null;
+
+  if (fileId) {
+    try {
+      const file = DriveApp.getFileById(fileId);
+      latestFile = {
+        name: file.getName(),
+        url: file.getUrl(),
+        downloadUrl: 'https://drive.google.com/uc?export=download&id=' + fileId,
+        updatedAt: Utilities.formatDate(file.getLastUpdated(), 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss')
+      };
+    } catch (error) {
+      Logger.log('讀取最新TXT檔案失敗: ' + error.toString());
+    }
+  }
+
+  return {
+    version: CONFIG.APP_VERSION,
+    latestFile: latestFile
+  };
 }
