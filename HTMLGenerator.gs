@@ -171,7 +171,7 @@ const HTMLGenerator = {
    * 偵測行政區
    */
   detectDistricts: function(data) {
-    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同'];
+    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同','松山'];
     const foundDistricts = [];
     
     for (let i = 0; i < data.length; i++) {
@@ -197,7 +197,7 @@ const HTMLGenerator = {
    * 在資料列中尋找行政區
    */
   findDistrictInRow: function(row) {
-    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同'];
+    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同','松山'];
     
     for (let j = 0; j < row.length; j++) {
       const cellValue = String(row[j]);
