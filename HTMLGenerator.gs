@@ -1,46 +1,48 @@
 const HTMLGenerator = {
   
   /**
-   * 生成多分頁HTML（適合插入Froala Editor）
+   * 生成多分頁HTML（完整獨立HTML檔案）
    */
   generateMultiSheet: function(allSheets, fileName) {
-    let html = '';
-    
-    // 內嵌樣式
-    html += '<style>\n';
+    let html = '<!DOCTYPE html>\n';
+    html += '<html lang="zh-TW">\n';
+    html += '<head>\n';
+    html += '  <meta charset="UTF-8">\n';
+    html += '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+    html += '  <title>' + this.escapeHtml(fileName) + '</title>\n';
+    html += '  <style>\n';
     html += this.getStyles();
-    html += '</style>\n';
-    html += '\n';
-    
-    // 容器開始
-    html += '<div class="excel-html-container">\n';
+    html += '  </style>\n';
+    html += '</head>\n';
+    html += '<body>\n';
+    html += '  <div class="container">\n';
     
     // 分頁切換按鈕
-    html += '  <div class="tab-buttons">\n';
+    html += '    <div class="tab-buttons">\n';
     for (let i = 0; i < allSheets.length; i++) {
       const activeClass = i === 0 ? ' active' : '';
-      html += '    <button class="tab-btn' + activeClass + '" onclick="switchExcelTab(' + i + ')">' + this.escapeHtml(allSheets[i].name) + '</button>\n';
+      html += '      <button class="tab-btn' + activeClass + '" onclick="switchTab(' + i + ')">' + this.escapeHtml(allSheets[i].name) + '</button>\n';
     }
-    html += '  </div>\n';
-    html += '  \n';
+    html += '    </div>\n';
+    html += '    \n';
     
     // 各分頁內容
     for (let i = 0; i < allSheets.length; i++) {
       const sheet = allSheets[i];
       const displayStyle = i === 0 ? 'block' : 'none';
       
-      html += '  <div class="excel-tab-content" id="exceltab' + i + '" style="display:' + displayStyle + '">\n';
+      html += '    <div class="tab-content" id="tab' + i + '" style="display:' + displayStyle + '">\n';
       html += this.generateSheetContent(sheet.data, i);
-      html += '  </div>\n';
+      html += '    </div>\n';
     }
     
-    html += '</div>\n';
-    html += '\n';
-    
-    // JavaScript
-    html += '<script>\n';
+    html += '  </div>\n';
+    html += '  \n';
+    html += '  <script>\n';
     html += this.getScripts(allSheets);
-    html += '</script>\n';
+    html += '  </script>\n';
+    html += '</body>\n';
+    html += '</html>';
     
     return html;
   },
@@ -62,58 +64,62 @@ const HTMLGenerator = {
     let html = '';
     
     // 搜尋框
-    html += '    <div class="excel-search-box">\n';
-    html += '      <input type="text" id="excelSearchInput' + tabIndex + '" placeholder="輸入關鍵字搜尋..." class="excel-search-input">\n';
-    html += '      <button onclick="excelSearch(' + tabIndex + ')" class="excel-btn excel-btn-primary">搜尋</button>\n';
-    html += '      <button onclick="excelClearSearch(' + tabIndex + ')" class="excel-btn excel-btn-secondary">清除</button>\n';
-    html += '      <span id="excelSearchStats' + tabIndex + '" class="excel-search-stats"></span>\n';
-    html += '    </div>\n';
-    html += '    \n';
+    html += '      <div class="search-box">\n';
+    html += '        <input type="text" id="searchInput' + tabIndex + '" placeholder="輸入關鍵字搜尋..." class="search-input">\n';
+    html += '        <button onclick="search(' + tabIndex + ')" class="btn btn-primary">搜尋</button>\n';
+    html += '        <button onclick="clearSearch(' + tabIndex + ')" class="btn btn-secondary">清除</button>\n';
+    html += '        <span id="searchStats' + tabIndex + '" class="search-stats"></span>\n';
+    html += '      </div>\n';
+    html += '      \n';
     
     // 篩選區域
     if (districtInfo.hasDistrict || checkboxColumns.length > 0) {
-      html += '    <div class="excel-filters">\n';
+      html += '      <div class="filters">\n';
       
       // 行政區篩選
       if (districtInfo.hasDistrict) {
-        html += '      <div class="excel-filter-section">\n';
-        html += '        <div class="excel-filter-title">行政區：</div>\n';
-        html += '        <div class="excel-filter-options">\n';
+        html += '        <div class="filter-section">\n';
+        html += '          <div class="filter-title">行政區：</div>\n';
+        html += '          <div class="filter-options">\n';
         for (let i = 0; i < districtInfo.districts.length; i++) {
           const district = districtInfo.districts[i];
-          html += '          <label class="excel-filter-label"><input type="checkbox" class="excel-district-filter" data-tab="' + tabIndex + '" value="' + this.escapeHtml(district) + '" onchange="excelApplyFilters(' + tabIndex + ')">' + this.escapeHtml(district) + '</label>\n';
+          html += '            <label class="filter-label"><input type="checkbox" class="district-filter" data-tab="' + tabIndex + '" value="' + this.escapeHtml(district) + '" onchange="applyFilters(' + tabIndex + ')">' + this.escapeHtml(district) + '</label>\n';
         }
+        // 如果有非台北市資料，增加"非臺北市"選項
+        if (districtInfo.hasNonTaipei) {
+          html += '            <label class="filter-label"><input type="checkbox" class="district-filter" data-tab="' + tabIndex + '" value="非臺北市" onchange="applyFilters(' + tabIndex + ')"><strong style="color: #d32f2f;">非臺北市</strong></label>\n';
+        }
+        html += '          </div>\n';
         html += '        </div>\n';
-        html += '      </div>\n';
       }
       
       // 其他過濾條件
       if (checkboxColumns.length > 0) {
-        html += '      <div class="excel-filter-section">\n';
-        html += '        <div class="excel-filter-title">其他過濾條件：</div>\n';
-        html += '        <div class="excel-filter-options">\n';
+        html += '        <div class="filter-section">\n';
+        html += '          <div class="filter-title">其他過濾條件：</div>\n';
+        html += '          <div class="filter-options">\n';
         for (let i = 0; i < checkboxColumns.length; i++) {
           const col = checkboxColumns[i];
-          html += '          <label class="excel-filter-label"><input type="checkbox" class="excel-column-filter" data-tab="' + tabIndex + '" data-column="' + col.index + '" onchange="excelApplyFilters(' + tabIndex + ')"><strong>' + this.escapeHtml(col.name) + '</strong></label>\n';
+          html += '            <label class="filter-label"><input type="checkbox" class="column-filter" data-tab="' + tabIndex + '" data-column="' + col.index + '" onchange="applyFilters(' + tabIndex + ')"><strong>' + this.escapeHtml(col.name) + '</strong></label>\n';
         }
+        html += '          </div>\n';
         html += '        </div>\n';
-        html += '      </div>\n';
       }
       
-      html += '    </div>\n';
-      html += '    \n';
+      html += '      </div>\n';
+      html += '      \n';
     }
     
     // 資料表格
-    html += '    <table class="excel-data-table" id="excelDataTable' + tabIndex + '">\n';
-    html += '      <thead>\n';
-    html += '        <tr>\n';
+    html += '      <table class="data-table" id="dataTable' + tabIndex + '">\n';
+    html += '        <thead>\n';
+    html += '          <tr>\n';
     for (let i = 0; i < headers.length; i++) {
-      html += '          <th>' + this.escapeHtml(headers[i]) + '</th>\n';
+      html += '            <th>' + this.escapeHtml(headers[i]) + '</th>\n';
     }
-    html += '        </tr>\n';
-    html += '      </thead>\n';
-    html += '      <tbody>\n';
+    html += '          </tr>\n';
+    html += '        </thead>\n';
+    html += '        <tbody>\n';
     
     // 只輸出有內容的資料列
     for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
@@ -130,7 +136,7 @@ const HTMLGenerator = {
       }
       
       if (!isEmpty) {
-        html += '        <tr data-row="' + rowIndex + '"';
+        html += '          <tr data-row="' + rowIndex + '"';
         
         // 添加行政區屬性
         if (districtInfo.hasDistrict) {
@@ -151,18 +157,18 @@ const HTMLGenerator = {
         html += '>\n';
         
         for (let cellIndex = 0; cellIndex < row.length; cellIndex++) {
-          html += '          <td>' + this.escapeHtml(String(row[cellIndex])) + '</td>\n';
+          html += '            <td>' + this.escapeHtml(String(row[cellIndex])) + '</td>\n';
         }
-        html += '        </tr>\n';
+        html += '          </tr>\n';
       }
     }
     
-    html += '      </tbody>\n';
-    html += '    </table>\n';
-    html += '    \n';
-    html += '    <div class="excel-footer">\n';
-    html += '      總計 <span id="excelCount' + tabIndex + '">' + data.length + '</span> 筆資料\n';
-    html += '    </div>\n';
+    html += '        </tbody>\n';
+    html += '      </table>\n';
+    html += '      \n';
+    html += '      <div class="footer">\n';
+    html += '        總計 <span id="count' + tabIndex + '">' + data.length + '</span> 筆資料\n';
+    html += '      </div>\n';
     
     return html;
   },
@@ -171,17 +177,48 @@ const HTMLGenerator = {
    * 偵測行政區
    */
   detectDistricts: function(data) {
-    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同','松山'];
+    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同', '松山'];
+    const nonTaipeiKeywords = ['新北市', '基隆市', '桃園市', '花蓮縣'];
     const foundDistricts = [];
+    let hasNonTaipei = false;
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       for (let j = 0; j < row.length; j++) {
         const cellValue = String(row[j]);
+        
+        // 檢測台北市行政區
         for (let k = 0; k < districts.length; k++) {
           const district = districts[k];
           if (cellValue.indexOf(district) !== -1 && foundDistricts.indexOf(district) === -1) {
             foundDistricts.push(district);
+          }
+        }
+        
+        // 檢測非台北市關鍵字
+        if (!hasNonTaipei) {
+          for (let k = 0; k < nonTaipeiKeywords.length; k++) {
+            const keyword = nonTaipeiKeywords[k];
+            const keywordIndex = cellValue.indexOf(keyword);
+            if (keywordIndex !== -1) {
+              // 檢查關鍵字後5個字內是否符合條件
+              const afterKeyword = cellValue.substring(keywordIndex + keyword.length, keywordIndex + keyword.length + 5);
+              
+              // 花蓮縣：需要有"市"或"鄉"
+              if (keyword === '花蓮縣') {
+                if (afterKeyword.indexOf('市') !== -1 || afterKeyword.indexOf('鄉') !== -1) {
+                  hasNonTaipei = true;
+                  break;
+                }
+              } 
+              // 其他（新北市、基隆市、桃園市）：需要有"區"
+              else {
+                if (afterKeyword.indexOf('區') !== -1) {
+                  hasNonTaipei = true;
+                  break;
+                }
+              }
+            }
           }
         }
       }
@@ -189,7 +226,8 @@ const HTMLGenerator = {
     
     return {
       hasDistrict: foundDistricts.length > 0,
-      districts: foundDistricts
+      districts: foundDistricts,
+      hasNonTaipei: hasNonTaipei && foundDistricts.length > 0  // 只有在有台北市行政區時才顯示
     };
   },
   
@@ -197,18 +235,60 @@ const HTMLGenerator = {
    * 在資料列中尋找行政區
    */
   findDistrictInRow: function(row) {
-    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同','松山'];
+    const districts = ['中正', '中山', '萬華', '信義', '大安', '文山', '內湖', '南港', '北投', '士林', '大同', '松山'];
+    const nonTaipeiKeywords = ['新北市', '基隆市', '桃園市', '花蓮縣'];
+    
+    let foundDistrict = null;
+    let hasNonTaipei = false;
     
     for (let j = 0; j < row.length; j++) {
       const cellValue = String(row[j]);
-      for (let k = 0; k < districts.length; k++) {
-        const district = districts[k];
-        if (cellValue.indexOf(district) !== -1) {
-          return district;
+      
+      // 檢查台北市行政區
+      if (!foundDistrict) {
+        for (let k = 0; k < districts.length; k++) {
+          const district = districts[k];
+          if (cellValue.indexOf(district) !== -1) {
+            foundDistrict = district;
+            break;
+          }
+        }
+      }
+      
+      // 檢查非台北市關鍵字
+      if (!hasNonTaipei) {
+        for (let k = 0; k < nonTaipeiKeywords.length; k++) {
+          const keyword = nonTaipeiKeywords[k];
+          const keywordIndex = cellValue.indexOf(keyword);
+          if (keywordIndex !== -1) {
+            // 檢查關鍵字後5個字內是否符合條件
+            const afterKeyword = cellValue.substring(keywordIndex + keyword.length, keywordIndex + keyword.length + 5);
+            
+            // 花蓮縣：需要有"市"或"鄉"
+            if (keyword === '花蓮縣') {
+              if (afterKeyword.indexOf('市') !== -1 || afterKeyword.indexOf('鄉') !== -1) {
+                hasNonTaipei = true;
+                break;
+              }
+            } 
+            // 其他（新北市、基隆市、桃園市）：需要有"區"
+            else {
+              if (afterKeyword.indexOf('區') !== -1) {
+                hasNonTaipei = true;
+                break;
+              }
+            }
+          }
         }
       }
     }
-    return null;
+    
+    // 如果有非台北市關鍵字，返回"非臺北市"
+    if (hasNonTaipei) {
+      return '非臺北市';
+    }
+    
+    return foundDistrict;
   },
   
   /**
@@ -261,62 +341,89 @@ const HTMLGenerator = {
   },
   
   /**
-   * CSS樣式（所有class加上excel-前綴避免衝突）
-   */
-  getStyles: function() {
-    let css = '';
-    css += '.excel-html-container { font-family: Arial, "Microsoft JhengHei", sans-serif; max-width: 100%; margin: 20px 0; }\n';
-    
-    css += '.tab-buttons { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 3px solid #b3e5fc; padding-bottom: 10px; flex-wrap: wrap; }\n';
-    css += '.tab-btn { padding: 10px 20px; background: linear-gradient(135deg, #4fc3f7 0%, #0288d1 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 2px 8px rgba(3, 169, 244, 0.3); }\n';
-    css += '.tab-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(3, 169, 244, 0.4); }\n';
-    css += '.tab-btn.active { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); box-shadow: 0 4px 12px rgba(2, 136, 209, 0.5); }\n';
-    css += '.excel-tab-content { display: none; }\n';
-    
-    css += '.excel-search-box { margin-bottom: 15px; padding: 15px; background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); border-radius: 10px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 8px rgba(3, 169, 244, 0.2); }\n';
-    css += '.excel-search-input { flex: 1; padding: 10px 15px; border: 2px solid #4fc3f7; border-radius: 8px; font-size: 14px; background: white; transition: all 0.3s; }\n';
-    css += '.excel-search-input:focus { outline: none; border-color: #0288d1; box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1); }\n';
-    css += '.excel-btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s; }\n';
-    css += '.excel-btn-primary { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; }\n';
-    css += '.excel-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(2, 136, 209, 0.4); }\n';
-    css += '.excel-btn-secondary { background: linear-gradient(135deg, #00acc1 0%, #00838f 100%); color: white; }\n';
-    css += '.excel-btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 172, 193, 0.4); }\n';
-    css += '.excel-search-stats { color: #d32f2f; font-size: 14px; font-weight: 600; }\n';
-    
-    css += '.excel-filters { margin-bottom: 15px; padding: 15px; background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); border-radius: 10px; box-shadow: 0 2px 8px rgba(3, 169, 244, 0.2); }\n';
-    css += '.excel-filter-section { margin-bottom: 12px; }\n';
-    css += '.excel-filter-section:last-child { margin-bottom: 0; }\n';
-    css += '.excel-filter-title { color: #01579b; margin-bottom: 8px; font-size: 15px; font-weight: 700; }\n';
-    css += '.excel-filter-options { display: flex; flex-wrap: wrap; gap: 15px; }\n';
-    css += '.excel-filter-label { cursor: pointer; color: #01579b; font-size: 14px; transition: all 0.2s; display: inline-flex; align-items: center; }\n';
-    css += '.excel-filter-label:hover { color: #0288d1; }\n';
-    css += '.excel-filter-label input[type="checkbox"] { margin-right: 6px; width: 16px; height: 16px; cursor: pointer; }\n';
-    
-    css += '.excel-data-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }\n';
-    css += '.excel-data-table th { background: linear-gradient(135deg, #4fc3f7 0%, #0288d1 100%); color: white; padding: 14px 12px; text-align: left; font-weight: 600; font-size: 14px; }\n';
-    css += '.excel-data-table td { padding: 12px; border-bottom: 1px solid #e1f5fe; color: #263238; font-size: 13px; }\n';
-    css += '.excel-data-table tr:nth-child(even) { background: #f1f8fb; }\n';
-    css += '.excel-data-table tr:hover { background: #e1f5fe; transition: background 0.2s; }\n';
-    css += '.excel-data-table tr.hidden { display: none; }\n';
-    
-    css += '.excel-highlight { background: #fff59d; font-weight: bold; padding: 2px 4px; border-radius: 3px; }\n';
-    css += '.excel-current-highlight { background: #ffeb3b; }\n';
-    
-    css += '.excel-footer { text-align: center; color: #455a64; font-size: 14px; padding: 15px; background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); border-radius: 8px; font-weight: 600; }\n';
-    css += '.excel-footer span { color: #d32f2f; font-size: 16px; }\n';
-    
-    return css;
-  },
+ * CSS樣式
+ */
+getStyles: function() {
+  let css = '';
+  
+  // 基礎設定
+  css += '* { box-sizing: border-box; margin: 0; padding: 0; }\n';
+  css += 'body { font-family: Arial, "Microsoft JhengHei", sans-serif; background: linear-gradient(135deg, #e0f7fa 0%, #b3e5fc 100%); padding: 20px; min-height: 100vh; font-size: 18px; line-height: 1.2; }\n';
+  css += '.container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }\n';
+  
+  // 分頁按鈕
+  css += '.tab-buttons { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 3px solid #b3e5fc; padding-bottom: 10px; flex-wrap: wrap; }\n';
+  css += '.tab-btn { padding: 12px 24px; background: linear-gradient(135deg, #4fc3f7 0%, #0288d1 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: 600; transition: all 0.3s; box-shadow: 0 2px 8px rgba(3, 169, 244, 0.3); line-height: 1.2; }\n';
+  css += '.tab-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(3, 169, 244, 0.4); }\n';
+  css += '.tab-btn.active { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); box-shadow: 0 4px 12px rgba(2, 136, 209, 0.5); }\n';
+  css += '.tab-content { display: none; }\n';
+  
+  // 搜尋框
+  css += '.search-box { margin-bottom: 15px; padding: 18px; background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); border-radius: 10px; display: flex; gap: 12px; align-items: center; box-shadow: 0 2px 8px rgba(3, 169, 244, 0.2); flex-wrap: wrap; }\n';
+  css += '.search-input { flex: 1; min-width: 250px; padding: 12px 18px; border: 2px solid #4fc3f7; border-radius: 8px; font-size: 18px; background: white; transition: all 0.3s; line-height: 1.2; }\n';
+  css += '.search-input:focus { outline: none; border-color: #0288d1; box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.1); }\n';
+  css += '.btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 18px; transition: all 0.3s; white-space: nowrap; line-height: 1.2; }\n';
+  css += '.btn-primary { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; }\n';
+  css += '.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(2, 136, 209, 0.4); }\n';
+  css += '.btn-secondary { background: linear-gradient(135deg, #00acc1 0%, #00838f 100%); color: white; }\n';
+  css += '.btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 172, 193, 0.4); }\n';
+  css += '.search-stats { color: #d32f2f; font-size: 18px; font-weight: 600; margin-left: auto; line-height: 1.2; }\n';
+  
+  // 篩選區域
+  css += '.filters { margin-bottom: 15px; padding: 18px; background: linear-gradient(135deg, #b3e5fc 0%, #81d4fa 100%); border-radius: 10px; box-shadow: 0 2px 8px rgba(3, 169, 244, 0.2); }\n';
+  css += '.filter-section { margin-bottom: 15px; }\n';
+  css += '.filter-section:last-child { margin-bottom: 0; }\n';
+  css += '.filter-title { color: #01579b; margin-bottom: 10px; font-size: 18px; font-weight: 700; line-height: 1.2; }\n';
+  css += '.filter-options { display: flex; flex-wrap: wrap; gap: 18px; }\n';
+  css += '.filter-label { cursor: pointer; color: #01579b; font-size: 18px; transition: all 0.2s; display: inline-flex; align-items: center; line-height: 1.2; }\n';
+  css += '.filter-label:hover { color: #0288d1; }\n';
+  css += '.filter-label input[type="checkbox"] { margin-right: 8px; width: 20px; height: 20px; cursor: pointer; }\n';
+  
+  // 資料表格
+  css += '.data-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }\n';
+  css += '.data-table th { background: linear-gradient(135deg, #4fc3f7 0%, #0288d1 100%); color: white; padding: 16px 14px; text-align: left; font-weight: 600; font-size: 18px; position: sticky; top: 0; z-index: 10; line-height: 1.2; }\n';
+  css += '.data-table td { padding: 14px; border-bottom: 1px solid #e1f5fe; color: #263238; font-size: 18px; line-height: 1.2; }\n';
+  css += '.data-table tr:nth-child(even) { background: #f1f8fb; }\n';
+  css += '.data-table tr:hover { background: #e1f5fe; transition: background 0.2s; }\n';
+  css += '.data-table tr.hidden { display: none; }\n';
+  
+  // 高亮標記
+  css += '.highlight { background: #fff59d; font-weight: bold; padding: 3px 6px; border-radius: 3px; }\n';
+  css += '.current-highlight { background: #ffeb3b; }\n';
+  
+  // 頁尾
+  css += '.footer { text-align: center; color: #455a64; font-size: 18px; padding: 18px; background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); border-radius: 8px; font-weight: 600; line-height: 1.2; }\n';
+  css += '.footer span { color: #d32f2f; font-size: 20px; font-weight: 700; }\n';
+  
+  // 響應式設計
+  css += '@media screen and (max-width: 768px) {\n';
+  css += '  body { font-size: 16px; padding: 10px; }\n';
+  css += '  .container { padding: 15px; }\n';
+  css += '  .tab-btn { padding: 10px 18px; font-size: 16px; }\n';
+  css += '  .search-input { font-size: 16px; padding: 10px 15px; }\n';
+  css += '  .btn { padding: 10px 18px; font-size: 16px; }\n';
+  css += '  .search-stats { font-size: 16px; }\n';
+  css += '  .filter-title { font-size: 16px; }\n';
+  css += '  .filter-label { font-size: 16px; }\n';
+  css += '  .filter-label input[type="checkbox"] { width: 18px; height: 18px; }\n';
+  css += '  .data-table th { font-size: 16px; padding: 12px 10px; }\n';
+  css += '  .data-table td { font-size: 16px; padding: 10px; }\n';
+  css += '  .footer { font-size: 16px; }\n';
+  css += '  .footer span { font-size: 18px; }\n';
+  css += '}\n';
+  
+  return css;
+},
   
   /**
-   * JavaScript功能（所有函數加上excel前綴避免衝突）
+   * JavaScript功能
    */
   getScripts: function(allSheets) {
     let js = '';
-    js += 'var excelCurrentTab = 0;\n';
+    js += 'var currentTab = 0;\n';
     js += '\n';
-    js += 'function switchExcelTab(tabIndex) {\n';
-    js += '  var contents = document.querySelectorAll(".excel-tab-content");\n';
+    js += 'function switchTab(tabIndex) {\n';
+    js += '  var contents = document.querySelectorAll(".tab-content");\n';
     js += '  for (var i = 0; i < contents.length; i++) {\n';
     js += '    contents[i].style.display = "none";\n';
     js += '  }\n';
@@ -324,15 +431,15 @@ const HTMLGenerator = {
     js += '  for (var i = 0; i < buttons.length; i++) {\n';
     js += '    buttons[i].classList.remove("active");\n';
     js += '  }\n';
-    js += '  document.getElementById("exceltab" + tabIndex).style.display = "block";\n';
+    js += '  document.getElementById("tab" + tabIndex).style.display = "block";\n';
     js += '  buttons[tabIndex].classList.add("active");\n';
-    js += '  excelCurrentTab = tabIndex;\n';
+    js += '  currentTab = tabIndex;\n';
     js += '}\n';
     js += '\n';
-    js += 'function excelSearch(tabIndex) {\n';
-    js += '  var keyword = document.getElementById("excelSearchInput" + tabIndex).value.trim();\n';
+    js += 'function search(tabIndex) {\n';
+    js += '  var keyword = document.getElementById("searchInput" + tabIndex).value.trim();\n';
     js += '  if (!keyword) return;\n';
-    js += '  var table = document.getElementById("excelDataTable" + tabIndex);\n';
+    js += '  var table = document.getElementById("dataTable" + tabIndex);\n';
     js += '  var rows = table.querySelectorAll("tbody tr");\n';
     js += '  var matchCount = 0;\n';
     js += '  for (var i = 0; i < rows.length; i++) {\n';
@@ -345,20 +452,20 @@ const HTMLGenerator = {
     js += '      if (text.indexOf(keyword) !== -1) {\n';
     js += '        hasMatch = true;\n';
     js += '        matchCount++;\n';
-    js += '        var regex = new RegExp("(" + excelEscapeRegex(keyword) + ")", "gi");\n';
-    js += '        cell.innerHTML = text.replace(regex, "<span class=\\"excel-highlight\\">$1</span>");\n';
+    js += '        var regex = new RegExp("(" + escapeRegex(keyword) + ")", "gi");\n';
+    js += '        cell.innerHTML = text.replace(regex, "<span class=\\"highlight\\">$1</span>");\n';
     js += '      }\n';
     js += '    }\n';
     js += '    if (hasMatch) { row.classList.remove("hidden"); } else { row.classList.add("hidden"); }\n';
     js += '  }\n';
-    js += '  document.getElementById("excelSearchStats" + tabIndex).textContent = "找到 " + matchCount + " 個符合項目";\n';
-    js += '  excelUpdateCount(tabIndex);\n';
+    js += '  document.getElementById("searchStats" + tabIndex).textContent = "找到 " + matchCount + " 個符合項目";\n';
+    js += '  updateCount(tabIndex);\n';
     js += '}\n';
     js += '\n';
-    js += 'function excelClearSearch(tabIndex) {\n';
-    js += '  document.getElementById("excelSearchInput" + tabIndex).value = "";\n';
-    js += '  document.getElementById("excelSearchStats" + tabIndex).textContent = "";\n';
-    js += '  var table = document.getElementById("excelDataTable" + tabIndex);\n';
+    js += 'function clearSearch(tabIndex) {\n';
+    js += '  document.getElementById("searchInput" + tabIndex).value = "";\n';
+    js += '  document.getElementById("searchStats" + tabIndex).textContent = "";\n';
+    js += '  var table = document.getElementById("dataTable" + tabIndex);\n';
     js += '  var rows = table.querySelectorAll("tbody tr");\n';
     js += '  for (var i = 0; i < rows.length; i++) {\n';
     js += '    var cells = rows[i].querySelectorAll("td");\n';
@@ -366,17 +473,17 @@ const HTMLGenerator = {
     js += '      cells[j].innerHTML = cells[j].textContent;\n';
     js += '    }\n';
     js += '  }\n';
-    js += '  excelApplyFilters(tabIndex);\n';
+    js += '  applyFilters(tabIndex);\n';
     js += '}\n';
     js += '\n';
-    js += 'function excelApplyFilters(tabIndex) {\n';
-    js += '  var table = document.getElementById("excelDataTable" + tabIndex);\n';
+    js += 'function applyFilters(tabIndex) {\n';
+    js += '  var table = document.getElementById("dataTable" + tabIndex);\n';
     js += '  var rows = table.querySelectorAll("tbody tr");\n';
     js += '  var districtFilters = [];\n';
-    js += '  var districtCheckboxes = document.querySelectorAll(".excel-district-filter[data-tab=\\"" + tabIndex + "\\"]:checked");\n';
+    js += '  var districtCheckboxes = document.querySelectorAll(".district-filter[data-tab=\\"" + tabIndex + "\\"]:checked");\n';
     js += '  for (var i = 0; i < districtCheckboxes.length; i++) { districtFilters.push(districtCheckboxes[i].value); }\n';
     js += '  var columnFilters = [];\n';
-    js += '  var columnCheckboxes = document.querySelectorAll(".excel-column-filter[data-tab=\\"" + tabIndex + "\\"]:checked");\n';
+    js += '  var columnCheckboxes = document.querySelectorAll(".column-filter[data-tab=\\"" + tabIndex + "\\"]:checked");\n';
     js += '  for (var i = 0; i < columnCheckboxes.length; i++) { columnFilters.push(columnCheckboxes[i].getAttribute("data-column")); }\n';
     js += '  for (var i = 0; i < rows.length; i++) {\n';
     js += '    var row = rows[i];\n';
@@ -392,27 +499,22 @@ const HTMLGenerator = {
     js += '    }\n';
     js += '    if (show) { row.classList.remove("hidden"); } else { row.classList.add("hidden"); }\n';
     js += '  }\n';
-    js += '  excelUpdateCount(tabIndex);\n';
+    js += '  updateCount(tabIndex);\n';
     js += '}\n';
     js += '\n';
-    js += 'function excelUpdateCount(tabIndex) {\n';
-    js += '  var table = document.getElementById("excelDataTable" + tabIndex);\n';
+    js += 'function updateCount(tabIndex) {\n';
+    js += '  var table = document.getElementById("dataTable" + tabIndex);\n';
     js += '  var visibleRows = table.querySelectorAll("tbody tr:not(.hidden)");\n';
-    js += '  document.getElementById("excelCount" + tabIndex).textContent = visibleRows.length;\n';
+    js += '  document.getElementById("count" + tabIndex).textContent = visibleRows.length;\n';
     js += '}\n';
     js += '\n';
-    js += 'function excelEscapeRegex(str) {\n';
+    js += 'function escapeRegex(str) {\n';
     js += '  return str.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");\n';
     js += '}\n';
     js += '\n';
-    js += 'if (typeof excelInitialized === "undefined") {\n';
-    js += '  excelInitialized = true;\n';
-    js += '  if (document.readyState === "loading") {\n';
-    js += '    document.addEventListener("DOMContentLoaded", function() { switchExcelTab(0); });\n';
-    js += '  } else {\n';
-    js += '    switchExcelTab(0);\n';
-    js += '  }\n';
-    js += '}\n';
+    js += 'document.addEventListener("DOMContentLoaded", function() {\n';
+    js += '  switchTab(0);\n';
+    js += '});\n';
     return js;
   },
   
