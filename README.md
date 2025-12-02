@@ -60,11 +60,6 @@
    - 產生可分享的公開連結
    - Google Sheets 自動記錄匯入資訊（檔名、筆數、URL、處理時間）
 
-7. **Froala Editor 相容**
-   - 無 `<html>`、`<head>`、`<body>` 等外層標籤
-   - 所有 CSS class 加上 `excel-` 前綴避免衝突
-   - 所有 JavaScript 函數加上 `excel` 前綴避免衝突
-   - 可直接插入任何 HTML 編輯器中
 
 ### 🎨 介面設計
 
@@ -94,9 +89,7 @@
 ├── 📄 ParserFactory.gs           # 解析器工廠
 │   ├── ParserFactory            # 解析器管理
 │   ├── BaseParser               # 基礎解析器類別
-│   ├── DefaultParser            # 預設解析器
-│   ├── DisciplineParser         # 規則格式解析器
-│   └── ContractUnitParser       # 特約單位解析器
+│   └── DefaultParser            # 預設解析器
 │
 ├── 📄 HTMLGenerator.gs           # HTML 生成器
 │   ├── generateMultiSheet()     # 生成多分頁 HTML
@@ -251,7 +244,7 @@
 
 #### Step 2：選擇 Excel 檔案
 
-1. 點擊 **「📊 匯入EXCEL表格」** 按鈕
+1. 點擊 **「拖曳檔案至此或點擊選擇檔案上傳」** 按鈕
 2. 選擇本機的 .xlsx 或 .xls 檔案
 3. 等待上傳（會顯示「上傳並解析檔案中...」）
 
@@ -546,7 +539,7 @@ function testParsing() {
 **檢查方法：**
 資料是否包含以下任一關鍵字：
 - 中正、中山、萬華、信義、大安、文山
-- 內湖、南港、北投、士林、大同
+- 內湖、南港、北投、士林、大同、松山
 
 如需新增其他行政區，請參考[新增行政區](#新增行政區)
 
@@ -683,4 +676,4 @@ SOFTWARE.
 
 ---
 
-**最後更新：2024-11-14**
+**最後更新：2024-12-2**
