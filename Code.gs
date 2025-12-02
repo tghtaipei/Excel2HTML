@@ -4,7 +4,7 @@
 function showSidebar() {
   try {
     const html = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle('EXCEL轉HTML表格')
+      .setTitle('EXCEL 轉 HTML 表格工具')
       .setWidth(600); // 增加寬度到600px (約視窗一半)
     SpreadsheetApp.getUi().showSidebar(html);
   } catch (error) {
@@ -47,11 +47,14 @@ function handleImport(fileData, fileName) {
       needHeaderInput: true,
       fileName: fileName,
       sheets: workbook.SheetNames.map(function(name, index) {
-        const preview = getSheetPreview(workbook.Sheets[name], 5);
+        const worksheet = workbook.Sheets[name];
+        const preview = getSheetPreview(worksheet, 5);
+        const suggestedHeaderRow = detectHeaderRow(worksheet);
         return {
           name: name,
           index: index,
-          preview: preview
+          preview: preview,
+          suggestedHeaderRow: suggestedHeaderRow
         };
       })
     };
@@ -187,6 +190,49 @@ function getSheetPreview(worksheet, rows) {
   }
   
   return preview;
+}
+
+
+/**
+ * 自動偵測標題列（找出第一個每行都有值的列）
+ */
+function detectHeaderRow(worksheet) {
+  const data = worksheet.data;
+  
+  if (data.length === 0) {
+    return 1; // 預設第一列
+  }
+  
+  // 尋找第一個每行都有值的列
+  for (let i = 0; i < Math.min(10, data.length); i++) {
+    const row = data[i];
+    let allCellsHaveValue = true;
+    let nonEmptyCount = 0;
+    
+    // 檢查這一列的每個儲存格
+    for (let j = 0; j < row.length; j++) {
+      const cell = row[j];
+      
+      // 如果儲存格有值
+      if (cell !== null && cell !== undefined && String(cell).trim() !== '') {
+        nonEmptyCount++;
+      } else {
+        // 如果前面已經有內容，但這個是空的，代表不是標題列
+        if (nonEmptyCount > 0) {
+          allCellsHaveValue = false;
+          break;
+        }
+      }
+    }
+    
+    // 如果這一列至少有3個欄位有值，且每個有效欄位都有值，就是標題列
+    if (allCellsHaveValue && nonEmptyCount >= 3) {
+      return i + 1; // 轉換為 1-based 索引
+    }
+  }
+  
+  // 如果找不到，預設第一列
+  return 1;
 }
 
 /**
