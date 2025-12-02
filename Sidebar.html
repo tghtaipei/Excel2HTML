@@ -3,93 +3,209 @@
 <head>
   <base target="_top">
   <style>
+    * {
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: Arial, "Microsoft JhengHei", sans-serif;
-      padding: 25px;
+      font-family: 'Segoe UI', Arial, "Microsoft JhengHei", sans-serif;
+      padding: 0;
       margin: 0;
-      background: linear-gradient(135deg, #e0f7fa 0%, #b3e5fc 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 25px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+    
+
+    .container {
+      flex: 1;
+      padding: 25px;
+      overflow-y: auto;
+    }
+    
+    .drop-zone {
+      border: 3px dashed rgba(255, 255, 255, 0.5);
+      border-radius: 15px;
+      padding: 50px 30px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.02);
+    }
+    
+    .drop-zone-icon {
+      font-size: 60px;
+      margin-bottom: 15px;
+      opacity: 0.8;
+    }
+    
+    .drop-zone-text {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .drop-zone-hint {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
     }
     
     .button-container {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      margin-top: 25px;
+      gap: 12px;
     }
     
     button {
-      padding: 14px 24px;
-      font-size: 15px;
+      padding: 16px 24px;
+      font-size: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    
+    button:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+    
+    button span {
+      position: relative;
+      z-index: 1;
     }
     
     .import-btn {
-      background: linear-gradient(135deg, #0288d1 0%, #0277bd 100%);
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
       color: white;
     }
     
     .import-btn:hover {
-      background: linear-gradient(135deg, #0277bd 0%, #01579b 100%);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(2, 136, 209, 0.4);
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
     }
     
     .clear-btn {
-      background: linear-gradient(135deg, #00acc1 0%, #00838f 100%);
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
       color: white;
     }
     
     .clear-btn:hover {
-      background: linear-gradient(135deg, #00838f 0%, #006064 100%);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 172, 193, 0.4);
+      box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
     }
     
     .status {
       margin-top: 20px;
-      padding: 12px;
-      border-radius: 8px;
+      padding: 15px 20px;
+      border-radius: 12px;
       display: none;
       font-size: 14px;
+      font-weight: 600;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     .status.success {
-      background: #c8e6c9;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
       color: #2e7d32;
       border: 2px solid #66bb6a;
     }
     
     .status.error {
-      background: #ffcdd2;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
       color: #c62828;
       border: 2px solid #ef5350;
     }
     
     .loading {
       display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
       text-align: center;
-      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      border-bottom: 3px solid #667eea;
     }
     
     .spinner {
-      border: 3px solid #b3e5fc;
-      border-top: 3px solid #0288d1;
+      border: 4px solid rgba(102, 126, 234, 0.2);
+      border-top: 4px solid #667eea;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       animation: spin 1s linear infinite;
-      margin: 10px auto;
+      margin: 0 auto 15px;
     }
     
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      color: #667eea;
+      font-weight: 600;
+      font-size: 16px;
     }
     
     input[type="file"] {
@@ -100,124 +216,205 @@
       display: none;
       margin-top: 20px;
       padding: 20px;
-      background: white;
-      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
       max-height: 500px;
       overflow-y: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
     
     .header-input-container h3 {
-      color: #01579b;
-      margin-bottom: 20px;
-      font-size: 18px;
+      color: #667eea;
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      font-weight: 700;
     }
     
     .sheet-header-input {
       margin-bottom: 20px;
-      padding: 15px;
-      background: white;
-      border-radius: 8px;
-      border: 2px solid #b3e5fc;
+      padding: 18px;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      border-radius: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
     }
     
     .sheet-header-input h4 {
-      margin: 0 0 12px 0;
-      color: #0277bd;
-      font-size: 16px;
+      margin: 0 0 15px 0;
+      color: #d84315;
+      font-size: 17px;
+      font-weight: 700;
     }
     
     .sheet-header-input label {
       display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-      color: #01579b;
+      margin-bottom: 10px;
+      font-size: 15px;
+      color: #bf360c;
       font-weight: 600;
     }
     
     .sheet-header-input input[type="number"] {
-      width: 100px;
-      padding: 8px 12px;
-      border: 2px solid #ff80ab;
-      border-radius: 6px;
-      font-size: 15px;
-      background: #fce4ec;
-      font-weight: 600;
-      color: #c2185b;
+      width: 120px;
+      padding: 10px 15px;
+      border: 3px solid #ff6f00;
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+      font-weight: 700;
+      color: #d84315;
+      transition: all 0.3s;
     }
     
     .sheet-header-input input[type="number"]:focus {
       outline: none;
       border-color: #f50057;
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(245, 0, 87, 0.1);
+      box-shadow: 0 0 0 4px rgba(245, 0, 87, 0.2);
+      transform: scale(1.05);
     }
     
     .preview-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 11px;
-      margin-top: 12px;
+      margin-top: 15px;
       background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
     .preview-table th,
     .preview-table td {
-      border: 1px solid #b3e5fc;
-      padding: 6px;
+      border: 1px solid #e0e0e0;
+      padding: 8px;
       text-align: left;
     }
     
     .preview-table th {
-      background: #e1f5fe;
-      font-weight: bold;
-      color: #01579b;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 700;
     }
     
     .preview-table td {
-      color: #37474f;
+      color: #424242;
+    }
+    
+    .preview-table tr:nth-child(even) {
+      background: #f5f5f5;
     }
     
     .confirm-btn {
-      background: linear-gradient(135deg, #00c853 0%, #00a152 100%);
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
       color: white;
       width: 100%;
       margin-top: 15px;
-      font-size: 16px;
+      font-size: 18px;
+      padding: 18px;
     }
     
     .confirm-btn:hover {
-      background: linear-gradient(135deg, #00a152 0%, #00897b 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4);
+    }
+    
+    /* 滾動條美化 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.7);
     }
   </style>
 </head>
 <body>
-  <div class="button-container">
-    <input type="file" id="fileInput" accept=".xlsx,.xls">
-    <button class="import-btn" onclick="selectFile()">📊 匯入EXCEL表格</button>
-    <button class="clear-btn" onclick="clearData()">🗑️ 清除資料</button>
-  </div>
-  
   <div class="loading" id="loading">
     <div class="spinner"></div>
-    <p id="loadingText" style="color: #0277bd; font-weight: 600;">處理中...</p>
+    <div class="loading-text" id="loadingText">處理中...</div>
   </div>
   
-  <div class="header-input-container" id="headerInputContainer"></div>
+  <div class="header">
+    <h1>輕鬆將您的 Excel 表格轉換為互動式網頁</h1>
+  </div>
   
-  <div class="status" id="status"></div>
+  <div class="container">
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">📁</div>
+      <div class="drop-zone-text">拖曳 Excel 檔案至此</div>
+      <div class="drop-zone-hint">或點擊選擇檔案上傳</div>
+    </div>
+    
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    
+    <div class="button-container">
+      <button class="clear-btn" onclick="clearData()">
+        <span>🗑️ 清除資料</span>
+      </button>
+    </div>
+    
+    <div class="header-input-container" id="headerInputContainer"></div>
+    
+    <div class="status" id="status"></div>
+  </div>
   
   <script>
     var currentFileName = '';
     var currentSheets = [];
     
+    // 拖拉上傳功能
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    
+    dropZone.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+    
     function selectFile() {
-      document.getElementById('fileInput').click();
+      fileInput.click();
     }
     
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-      var file = e.target.files[0];
-      if (!file) return;
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    });
+    
+    function handleFile(file) {
+      if (!file.name.match(/\.(xlsx|xls)$/i)) {
+        showStatus('請選擇 Excel 檔案 (.xlsx 或 .xls)', 'error');
+        return;
+      }
       
       showLoading('上傳並解析檔案中...');
       
@@ -231,7 +428,7 @@
           .handleImport(data, file.name);
       };
       reader.readAsDataURL(file);
-    });
+    }
     
     function onImportSuccess(result) {
       hideLoading();
@@ -247,21 +444,26 @@
         showHeaderInput(result.sheets);
       } else {
         showStatus(result.message, 'success');
-        document.getElementById('fileInput').value = '';
+        fileInput.value = '';
       }
     }
     
     function showHeaderInput(sheets) {
+      // 隱藏拖曳區塊和清除按鈕
+      document.getElementById('dropZone').style.display = 'none';
+      document.querySelector('.button-container').style.display = 'none';
+      
       var container = document.getElementById('headerInputContainer');
-      container.innerHTML = '<h3>請指定各分頁的標題列位置</h3>';
+      container.innerHTML = '<h3>📋 請指定各分頁的標題列位置</h3>';
       
       for (var i = 0; i < sheets.length; i++) {
         var sheet = sheets[i];
         var div = document.createElement('div');
         div.className = 'sheet-header-input';
         
-        var html = '<h4>' + escapeHtml(sheet.name) + '</h4>';
-        html += '<label>標題列在第幾列？<input type="number" id="headerRow' + i + '" value="1" min="1" max="100"></label>';
+        var html = '<h4>📄 ' + escapeHtml(sheet.name) + '</h4>';
+        var suggestedRow = sheet.suggestedHeaderRow || 1;
+        html += '<label>標題列在第幾列？（系統建議：第 ' + suggestedRow + ' 列）<input type="number" id="headerRow' + i + '" value="' + suggestedRow + '" min="1" max="100"></label>';
         html += '<table class="preview-table"><thead><tr><th>列</th>';
         
         if (sheet.preview.length > 0) {
@@ -273,7 +475,9 @@
         html += '</tr></thead><tbody>';
         
         for (var r = 0; r < sheet.preview.length; r++) {
-          html += '<tr><td><strong>' + (r + 1) + '</strong></td>';
+          var isHeaderRow = (r + 1) === suggestedRow;
+          var rowClass = isHeaderRow ? ' style="background: #fff3e0; border: 2px solid #ff9800;"' : '';
+          html += '<tr' + rowClass + '><td><strong>' + (r + 1) + (isHeaderRow ? ' 👈' : '') + '</strong></td>';
           for (var c = 0; c < Math.min(10, sheet.preview[r].length); c++) {
             var cellValue = sheet.preview[r][c] === null || sheet.preview[r][c] === undefined ? '' : sheet.preview[r][c];
             html += '<td>' + escapeHtml(String(cellValue)) + '</td>';
@@ -288,7 +492,7 @@
       
       var confirmBtn = document.createElement('button');
       confirmBtn.className = 'confirm-btn';
-      confirmBtn.textContent = '✓ 確認並繼續匯入';
+      confirmBtn.innerHTML = '<span>✓ 確認並繼續匯入</span>';
       confirmBtn.onclick = confirmHeaders;
       container.appendChild(confirmBtn);
       
@@ -325,13 +529,21 @@
       if (result.success) {
         showStatus(result.message, 'success');
         document.getElementById('fileInput').value = '';
+        
+        // 重新顯示拖曳區塊和清除按鈕
+        document.getElementById('dropZone').style.display = 'block';
+        document.querySelector('.button-container').style.display = 'flex';
       } else {
         showStatus(result.message, 'error');
+        
+        // 錯誤時也重新顯示
+        document.getElementById('dropZone').style.display = 'block';
+        document.querySelector('.button-container').style.display = 'flex';
       }
     }
     
     function clearData() {
-      if (!confirm('確定要清除所有資料嗎?')) return;
+      if (!confirm('確定要清除所有資料嗎？')) return;
       
       showLoading('清除資料中...');
       
@@ -373,7 +585,11 @@
       var buttons = document.querySelectorAll('button');
       for (var i = 0; i < buttons.length; i++) {
         buttons[i].disabled = true;
+        buttons[i].style.opacity = '0.6';
+        buttons[i].style.cursor = 'not-allowed';
       }
+      dropZone.style.pointerEvents = 'none';
+      dropZone.style.opacity = '0.6';
     }
     
     function hideLoading() {
@@ -381,7 +597,11 @@
       var buttons = document.querySelectorAll('button');
       for (var i = 0; i < buttons.length; i++) {
         buttons[i].disabled = false;
+        buttons[i].style.opacity = '1';
+        buttons[i].style.cursor = 'pointer';
       }
+      dropZone.style.pointerEvents = 'auto';
+      dropZone.style.opacity = '1';
     }
     
     function escapeHtml(text) {
