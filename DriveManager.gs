@@ -1,15 +1,15 @@
 const DriveManager = {
   
   /**
-   * 儲存HTML到Drive
+   * 儲存HTML到Drive（確保UTF-8編碼）
    */
   saveHTML: function(htmlContent, fileName) {
     try {
       // 取得或建立目標資料夾
       const folder = this.getOrCreateFolder('匯入資料');
       
-      // 建立HTML檔案
-      const blob = Utilities.newBlob(htmlContent, 'text/html', fileName);
+      // 建立HTML檔案，明確指定 UTF-8 編碼
+      const blob = Utilities.newBlob(htmlContent, 'text/html; charset=UTF-8', fileName);
       const file = folder.createFile(blob);
       
       // 設定共享權限 (任何人可檢視)
