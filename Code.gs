@@ -4,7 +4,7 @@
 function showSidebar() {
   try {
     const html = HtmlService.createHtmlOutputFromFile('Sidebar')
-      .setTitle('EXCEL 轉 HTML 表格工具')
+      .setTitle('EXCEL轉HTML表格工具')
       .setWidth(600); // 增加寬度到600px (約視窗一半)
     SpreadsheetApp.getUi().showSidebar(html);
   } catch (error) {
@@ -346,3 +346,6 @@ function parseExcelFile(base64Data, fileName) {
     throw new Error('解析Excel檔案失敗: ' + error.toString());
   }
 }
+/**
+ * 匯出篩選後的資料為PDF
+ */
